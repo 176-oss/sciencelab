@@ -1,712 +1,794 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Swords, Zap, Heart, RefreshCw, Skull, Trophy, Star, Target, Flame, Layers, Beaker, ArrowRight, BookOpen
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
 
-// --- 게임 데이터 ---
-const BOSSES = [
-{
-id: 1,
-name: "과학A 수행평가",
-icon: "📜",
-maxHp: 80,
-attack: 5,
-proj: "✒️",
-bgClass: "from-blue-900 to-slate-900",
-description: "첫 번째 관문! 마법 스크롤 형태의 몬스터입니다.",
-animClass: "animate-float-fast"
-},
-{
-id: 2,
-name: "정기시험 드래곤",
-icon: "🐲",
-maxHp: 180,
-attack: 15,
-proj: "☄️",
-bgClass: "from-rose-900 to-slate-900",
-description: "중간 보스! 넓은 시험 범위의 브레스를 뿜는 시험의 드래곤입니다.",
-animClass: "animate-boss-breathe"
-},
-{
-id: 3,
-name: "주성쌤",
-icon: "🦹‍♂️",
-maxHp: 300,
-attack: 35,
-proj: "💥",
-bgClass: "from-purple-950 to-black",
-description: "진 최종 보스! 압도적인 위압감을 뿜어내는 어둠의 연금술사입니다.",
-animClass: "animate-boss-menace drop-shadow-[0_0_20px_rgba(225,29,72,0.8)]"
-}
-];
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>케미컬 가디언즈 : 화학반응 마스터</title>
 
-const SPELLS = [
-{ id: 1, name: "물의 장막 (물 생성)", icon: "💦", difficulty: 1, damage: 20, effect: { type: 'heal', value: 30, desc: "체력 30
-회복" }, parts: [ { type: 'reactant', formula: 'H₂', elements: { H: 2 } }, { type: 'reactant', formula: 'O₂', elements: {
-O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } } ], solution: [2, 1, 2] },
-{ id: 2, name: "흑화의 저주 (구리 산화)", icon: "🌑", difficulty: 1, damage: 20, effect: { type: 'evasion', value: 1, desc: "다음
-피격 1회 회피(Miss)" }, parts: [ { type: 'reactant', formula: 'Cu', elements: { Cu: 1 } }, { type: 'reactant', formula: 'O₂',
-elements: { O: 2 } }, { type: 'product', formula: 'CuO', elements: { Cu: 1, O: 1 } } ], solution: [2, 1, 2] },
-{ id: 3, name: "검은 가루 (탄소 연소)", icon: "🪨", difficulty: 1, damage: 20, parts: [ { type: 'reactant', formula: 'C',
-elements: { C: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CO₂',
-elements: { C: 1, O: 2 } } ], solution: [1, 1, 1] },
-{ id: 4, name: "짠맛의 결정 (염화나트륨 생성)", icon: "🧂", difficulty: 1, damage: 20, effect: { type: 'draw', value: 2, desc: "턴 소모
-없이 2장 뽑기" }, parts: [ { type: 'reactant', formula: 'Na', elements: { Na: 1 } }, { type: 'reactant', formula: 'Cl₂',
-elements: { Cl: 2 } }, { type: 'product', formula: 'NaCl', elements: { Na: 1, Cl: 1 } } ], solution: [2, 1, 2] },
-{ id: 5, name: "섬광탄 (마그네슘 연소)", icon: "✨", difficulty: 2, damage: 35, effect: { type: 'stun', value: 1, desc: "보스 반격 1회
-무효화" }, parts: [ { type: 'reactant', formula: 'Mg', elements: { Mg: 1 } }, { type: 'reactant', formula: 'O₂', elements:
-{ O: 2 } }, { type: 'product', formula: 'MgO', elements: { Mg: 1, O: 1 } } ], solution: [2, 1, 2] },
-{ id: 6, name: "정화의 거품 (과산화수소 분해)", icon: "🫧", difficulty: 2, damage: 35, effect: { type: 'heal', value: 50, desc: "체력
-50 회복" }, parts: [ { type: 'reactant', formula: 'H₂O₂', elements: { H: 2, O: 2 } }, { type: 'product', formula: 'H₂O',
-elements: { H: 2, O: 1 } }, { type: 'product', formula: 'O₂', elements: { O: 2 } } ], solution: [2, 2, 1] },
-{ id: 7, name: "질식의 바람 (암모니아 생성)", icon: "💨", difficulty: 2, damage: 35, parts: [ { type: 'reactant', formula: 'N₂',
-elements: { N: 2 } }, { type: 'reactant', formula: 'H₂', elements: { H: 2 } }, { type: 'product', formula: 'NH₃',
-elements: { N: 1, H: 3 } } ], solution: [1, 3, 2] },
-{ id: 8, name: "붉은 녹 (철의 산화)", icon: "🧲", difficulty: 2, damage: 35, parts: [ { type: 'reactant', formula: 'Fe',
-elements: { Fe: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'Fe₂O₃',
-elements: { Fe: 2, O: 3 } } ], solution: [4, 3, 2] },
-{ id: 9, name: "환원의 일격 (산화구리 환원)", icon: "🔨", difficulty: 3, damage: 55, parts: [ { type: 'reactant', formula: 'CuO',
-elements: { Cu: 1, O: 1 } }, { type: 'reactant', formula: 'C', elements: { C: 1 } }, { type: 'product', formula: 'Cu',
-elements: { Cu: 1 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } } ], solution: [2, 1, 2, 1] },
-{ id: 10, name: "폭발 마법 (메테인 연소)", icon: "💥", difficulty: 3, damage: 55, effect: { type: 'crit', value: 1, desc: "100%
-확률로 크리티컬" }, parts: [ { type: 'reactant', formula: 'CH₄', elements: { C: 1, H: 4 } }, { type: 'reactant', formula: 'O₂',
-elements: { O: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O',
-elements: { H: 2, O: 1 } } ], solution: [1, 2, 1, 2] },
-{ id: 11, name: "팽창하는 대지 (탄산수소나트륨 분해)", icon: "🌋", difficulty: 3, damage: 55, parts: [ { type: 'reactant', formula:
-'NaHCO₃', elements: { Na: 1, H: 1, C: 1, O: 3 } }, { type: 'product', formula: 'Na₂CO₃', elements: { Na: 2, C: 1, O: 3 }
-}, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2,
-O: 1 } } ], solution: [2, 1, 1, 1] },
-{ id: 12, name: "은빛 방패 (알루미늄 산화)", icon: "🛡️", difficulty: 3, damage: 55, effect: { type: 'shield', value: 1, desc: "다음
-피격 데미지 50% 감소" }, parts: [ { type: 'reactant', formula: 'Al', elements: { Al: 1 } }, { type: 'reactant', formula: 'O₂',
-elements: { O: 2 } }, { type: 'product', formula: 'Al₂O₃', elements: { Al: 2, O: 3 } } ], solution: [4, 3, 2] },
-{ id: 13, name: "산소 폭발 (염소산칼륨 분해)", icon: "🧪", difficulty: 3, damage: 55, parts: [ { type: 'reactant', formula:
-'KClO₃', elements: { K: 1, Cl: 1, O: 3 } }, { type: 'product', formula: 'KCl', elements: { K: 1, Cl: 1 } }, { type:
-'product', formula: 'O₂', elements: { O: 2 } } ], solution: [2, 2, 3] },
-{ id: 14, name: "대화재 (프로페인 연소)", icon: "🔥", difficulty: 3, damage: 70, parts: [ { type: 'reactant', formula: 'C₃H₈',
-elements: { C: 3, H: 8 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CO₂',
-elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } } ], solution: [1, 5, 3, 4] },
-{ id: 15, name: "백색 침전 (탄산나트륨+염화칼슘)", icon: "🥛", difficulty: 3, damage: 60, parts: [ { type: 'reactant', formula:
-'Na₂CO₃', elements: { Na: 2, C: 1, O: 3 } }, { type: 'reactant', formula: 'CaCl₂', elements: { Ca: 1, Cl: 2 } }, { type:
-'product', formula: 'CaCO₃', elements: { Ca: 1, C: 1, O: 3 } }, { type: 'product', formula: 'NaCl', elements: { Na: 1,
-Cl: 1 } } ], solution: [1, 1, 1, 2] },
-{ id: 16, name: "하늘의 분노 (질소+산소)", icon: "🌩️", difficulty: 2, damage: 45, effect: { type: 'double', value: 1, desc: "데미지
-2배 증폭 폭발" }, parts: [ { type: 'reactant', formula: 'N₂', elements: { N: 2 } }, { type: 'reactant', formula: 'O₂',
-elements: { O: 2 } }, { type: 'product', formula: 'NO₂', elements: { N: 1, O: 2 } } ], solution: [1, 2, 2] },
-{ id: 17, name: "부글부글 마법 (마그네슘+염산)", icon: "🧼", difficulty: 2, damage: 45, effect: { type: 'reflect', value: 1, desc:
-"다음 보스 공격 100% 반사" }, parts: [ { type: 'reactant', formula: 'Mg', elements: { Mg: 1 } }, { type: 'reactant', formula:
-'HCl', elements: { H: 1, Cl: 1 } }, { type: 'product', formula: 'MgCl₂', elements: { Mg: 1, Cl: 2 } }, { type:
-'product', formula: 'H₂', elements: { H: 2 } } ], solution: [1, 2, 1, 1] },
-{ id: 18, name: "흰색 앙금 (염화나트륨+질산은)", icon: "🌫️", difficulty: 1, damage: 30, parts: [ { type: 'reactant', formula:
-'NaCl', elements: { Na: 1, Cl: 1 } }, { type: 'reactant', formula: 'AgNO₃', elements: { Ag: 1, N: 1, O: 3 } }, { type:
-'product', formula: 'AgCl', elements: { Ag: 1, Cl: 1 } }, { type: 'product', formula: 'NaNO₃', elements: { Na: 1, N: 1,
-O: 3 } } ], solution: [1, 1, 1, 1] },
-{ id: 19, name: "기체 방출 (염산+탄산칼슘)", icon: "🌬️", difficulty: 3, damage: 70, parts: [ { type: 'reactant', formula: 'HCl',
-elements: { H: 1, Cl: 1 } }, { type: 'reactant', formula: 'CaCO₃', elements: { Ca: 1, C: 1, O: 3 } }, { type: 'product',
-formula: 'CaCl₂', elements: { Ca: 1, Cl: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type:
-'product', formula: 'H₂O', elements: { H: 2, O: 1 } } ], solution: [2, 1, 1, 1, 1] }
-];
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-export default function App() {
-const PLAYER_MAX_HP = 300;
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-const [gameState, setGameState] = useState('intro');
-const [currentBossIndex, setCurrentBossIndex] = useState(0);
-const [bossHp, setBossHp] = useState(BOSSES[0].maxHp);
-const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP);
-const [hand, setHand] = useState([]);
-const [selectedHandIndex, setSelectedHandIndex] = useState(null);
-const [coefficients, setCoefficients] = useState([]);
-const [practiceSpell, setPracticeSpell] = useState(null);
-const [practiceStatus, setPracticeStatus] = useState('playing');
-const [buffs, setBuffs] = useState({ shield: 0, evasion: 0, reflect: 0 });
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-const [animState, setAnimState] = useState({
-player: 'idle', boss: 'idle', projectile: null, attacker: null, damageTextPlayer: null, damageTextBoss: null
-});
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 다이내믹 애니메이션 Keyframes */
+        @keyframes float-slow {
 
-const currentBoss = BOSSES[currentBossIndex];
-const selectedSpell = selectedHandIndex !== null && hand.length > selectedHandIndex ? hand[selectedHandIndex] : null;
+            0%,
+            100% {
+                transform: translateY(0);
+            }
 
-const getRandomSpell = () => SPELLS[Math.floor(Math.random() * SPELLS.length)];
-
-const startGame = () => {
-setCurrentBossIndex(0);
-setBossHp(BOSSES[0].maxHp);
-setPlayerHp(PLAYER_MAX_HP);
-setBuffs({ shield: 0, evasion: 0, reflect: 0 });
-setHand([getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell()]);
-setGameState('battle');
-};
-
-const startPractice = () => {
-const spell = getRandomSpell();
-setPracticeSpell(spell);
-setCoefficients(new Array(spell.parts.length).fill(1));
-setPracticeStatus('playing');
-setGameState('practice');
-};
-
-const nextPractice = () => {
-const spell = getRandomSpell();
-setPracticeSpell(spell);
-setCoefficients(new Array(spell.parts.length).fill(1));
-setPracticeStatus('playing');
-};
-
-const checkPracticeResult = () => {
-if (!practiceSpell) return;
-const isCorrect = coefficients.every((val, index) => val === practiceSpell.solution[index]);
-setPracticeStatus(isCorrect ? 'correct' : 'incorrect');
-};
-
-const executeBossAttack = (currentHp, currentBuffs, onComplete) => {
-let damage = currentBoss.attack;
-let pText = `-${damage}`;
-let rDamage = 0;
-let consumedBuff = null;
-
-if (currentBuffs.evasion > 0) {
-damage = 0; pText = "회피! (Miss)"; consumedBuff = 'evasion';
-} else if (currentBuffs.reflect > 0) {
-rDamage = damage; damage = 0; pText = "반사! ✨"; consumedBuff = 'reflect';
-} else if (currentBuffs.shield > 0) {
-damage = Math.floor(damage / 2); pText = `-${damage} (방어 🛡️)`; consumedBuff = 'shield';
-}
-
-if (consumedBuff) {
-setBuffs(prev => ({ ...prev, [consumedBuff]: prev[consumedBuff] - 1 }));
-}
-
-setAnimState(prev => ({ ...prev, boss: 'attack', projectile: currentBoss.proj, attacker: 'boss' }));
-
-setTimeout(() => {
-const newHp = Math.max(0, currentHp - damage);
-setPlayerHp(newHp);
-
-let newBossHpStr = null;
-if (rDamage > 0) {
-setBossHp(prev => Math.max(1, prev - rDamage));
-newBossHpStr = `-${rDamage} 반사!`;
-}
-
-setAnimState(prev => ({
-...prev,
-player: 'hurt',
-boss: 'idle',
-projectile: null,
-damageTextPlayer: pText,
-...(newBossHpStr ? { damageTextBoss: newBossHpStr } : {})
-}));
-
-setTimeout(() => {
-if (newHp === 0) {
-setGameState('game_over');
-} else {
-if (onComplete) onComplete(newHp);
-}
-}, 1000);
-}, 500);
-};
-
-const drawCard = () => {
-if (hand.length >= 5) return;
-executeBossAttack(playerHp, buffs, (newHp) => {
-setHand(prev => {
-if (prev.length < 5) return [...prev, getRandomSpell()]; return prev; }); setAnimState(prev=> ({ ...prev, player:
-    'idle', damageTextPlayer: null, damageTextBoss: null }));
-    });
-    };
-
-    const handleSpellSelect = (index) => {
-    setSelectedHandIndex(index);
-    setCoefficients(new Array(hand[index].parts.length).fill(1));
-    setGameState('solving');
-    };
-
-    const updateCoefficient = (index, delta) => {
-    const newCoeffs = [...coefficients];
-    newCoeffs[index] = Math.max(1, newCoeffs[index] + delta);
-    setCoefficients(newCoeffs);
-    if (gameState === 'practice' && practiceStatus === 'incorrect') setPracticeStatus('playing');
-    };
-
-    const calculateAtoms = (spell) => {
-    const leftAtoms = {};
-    const rightAtoms = {};
-    if (!spell || coefficients.length === 0) return { leftAtoms, rightAtoms };
-    spell.parts.forEach((part, index) => {
-    const coeff = coefficients[index];
-    Object.entries(part.elements).forEach(([el, count]) => {
-    if (part.type === 'reactant') leftAtoms[el] = (leftAtoms[el] || 0) + (count * coeff);
-    else rightAtoms[el] = (rightAtoms[el] || 0) + (count * coeff);
-    });
-    });
-    return { leftAtoms, rightAtoms };
-    };
-
-    const castSpell = () => {
-    if (!selectedSpell) return;
-    const isCorrect = coefficients.every((v, i) => v === selectedSpell.solution[i]);
-    const effect = selectedSpell.effect;
-
-    setHand(prev => prev.filter((_, i) => i !== selectedHandIndex));
-    setSelectedHandIndex(null);
-
-    if (isCorrect) {
-    let nextBuffs = { ...buffs };
-    let skipBossAttack = false;
-    let hpHeal = 0;
-    let extraDraw = 0;
-
-    let finalDamage = selectedSpell.damage;
-    let isCrit = Math.random() < 0.1; if (effect) { if (effect.type==='crit' ) isCrit=true; if (effect.type==='double' )
-        finalDamage *=2; if (effect.type==='shield' ) nextBuffs.shield +=1; if (effect.type==='evasion' )
-        nextBuffs.evasion +=1; if (effect.type==='reflect' ) nextBuffs.reflect +=1; if (effect.type==='stun' )
-        skipBossAttack=true; if (effect.type==='heal' ) hpHeal=effect.value; if (effect.type==='draw' )
-        extraDraw=effect.value; } if (isCrit) finalDamage *=2; setBuffs(nextBuffs); let newPlayerHp=playerHp; if
-        (hpHeal> 0) {
-        newPlayerHp = Math.min(PLAYER_MAX_HP, playerHp + hpHeal);
-        setPlayerHp(newPlayerHp);
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
-        if (extraDraw > 0) {
-        setHand(prev => {
-        let newHand = [...prev];
-        for(let i=0; i<extraDraw; i++) { if (newHand.length < 5) newHand.push(getRandomSpell()); } return newHand; }); }
-            setAnimState(prev=> ({
-            ...prev,
-            player: 'attack',
-            projectile: selectedSpell.icon,
-            attacker: 'player',
-            damageTextPlayer: hpHeal > 0 ? `+${hpHeal} 회복! 💚` : null
-            }));
+        @keyframes float-fast {
 
-            setTimeout(() => {
-            const newBossHp = Math.max(0, bossHp - finalDamage);
-            setBossHp(newBossHp);
-            setAnimState(prev => ({
-            ...prev,
-            player: 'idle',
-            boss: 'hurt',
-            projectile: null,
-            damageTextBoss: isCrit ? `-${finalDamage} 크리티컬!🔥` : `-${finalDamage}`
-            }));
+            0%,
+            100% {
+                transform: translateY(0);
+            }
 
-            setTimeout(() => {
-            setAnimState(prev => ({ ...prev, damageTextPlayer: null }));
-            if (newBossHp === 0) {
-            setAnimState(prev => ({ ...prev, boss: 'dead', damageTextBoss: null }));
-            setTimeout(() => {
-            if (currentBossIndex + 1 < BOSSES.length) { setPlayerHp(prev=> Math.min(PLAYER_MAX_HP, prev + 200));
-                setCurrentBossIndex(prev => prev + 1);
-                setBossHp(BOSSES[currentBossIndex + 1].maxHp);
-                setHand([getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell()]);
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes player-hover {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-8px) scale(1.02);
+            }
+        }
+
+        @keyframes boss-breathe {
+
+            0%,
+            100% {
+                transform: scale(1) translateY(0);
+            }
+
+            50% {
+                transform: scale(1.08) translateY(-5px);
+            }
+        }
+
+        @keyframes boss-menace {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+
+            25% {
+                transform: translateY(-8px) rotate(2deg) scale(1.05);
+            }
+
+            75% {
+                transform: translateY(8px) rotate(-2deg) scale(1.05);
+            }
+        }
+
+        @keyframes projectile-right {
+            0% {
+                transform: translateX(-60px) scale(0.5) rotate(0deg);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateX(-30px) scale(1.2) rotate(45deg);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateX(180px) scale(1.2) rotate(180deg);
+            }
+
+            100% {
+                transform: translateX(200px) scale(0.5) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes projectile-left {
+            0% {
+                transform: translateX(60px) scale(0.5) rotate(0deg);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateX(30px) scale(1.2) rotate(-45deg);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translateX(-180px) scale(1.2) rotate(-180deg);
+            }
+
+            100% {
+                transform: translateX(-200px) scale(0.5) rotate(-360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0) rotate(0deg);
+            }
+
+            25% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+
+            75% {
+                transform: translateX(5px) rotate(5deg);
+            }
+        }
+
+        .animate-float-slow {
+            animation: float-slow 4s ease-in-out infinite;
+        }
+
+        .animate-float-fast {
+            animation: float-fast 2.5s ease-in-out infinite;
+        }
+
+        .animate-player-hover {
+            animation: player-hover 3s ease-in-out infinite;
+        }
+
+        .animate-boss-breathe {
+            animation: boss-breathe 4s ease-in-out infinite;
+        }
+
+        .animate-boss-menace {
+            animation: boss-menace 5s ease-in-out infinite;
+        }
+
+        .animate-projectile-right {
+            animation: projectile-right 0.6s ease-in forwards;
+        }
+
+        .animate-projectile-left {
+            animation: projectile-left 0.6s ease-in forwards;
+        }
+
+        .animate-shake {
+            animation: shake 0.3s ease-in-out infinite;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body {
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+        }
+
+        #root {
+            width: 100%;
+            max-width: 900px;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 아이콘 컴포넌트 렌더링을 위한 헬퍼 (Lucide React 대신 직접 구현하거나 문자열로 처리)
+        // 여기서는 브라우저 환경 호환성을 위해 간단한 이모지나 SVG로 대체되는 구조로 만들었습니다.
+
+        // --- 게임 데이터 ---
+        const BOSSES = [
+            {
+                id: 1,
+                name: "과학A 수행평가",
+                icon: "📜",
+                maxHp: 80,
+                attack: 5,
+                proj: "✒️",
+                bgClass: "from-blue-900 to-slate-900",
+                description: "첫 번째 관문! 마법 스크롤 형태의 몬스터입니다.",
+                animClass: "animate-float-fast"
+            },
+            {
+                id: 2,
+                name: "정기시험 드래곤",
+                icon: "🐲",
+                maxHp: 180,
+                attack: 15,
+                proj: "☄️",
+                bgClass: "from-rose-900 to-slate-900",
+                description: "중간 보스! 넓은 시험 범위의 브레스를 뿜는 시험의 드래곤입니다.",
+                animClass: "animate-boss-breathe"
+            },
+            {
+                id: 3,
+                name: "주성쌤",
+                icon: "🦹‍♂️",
+                maxHp: 300,
+                attack: 35,
+                proj: "💥",
+                bgClass: "from-purple-950 to-black",
+                description: "진 최종 보스! 압도적인 위압감을 뿜어내는 어둠의 연금술사입니다.",
+                animClass: "animate-boss-menace drop-shadow-[0_0_20px_rgba(225,29,72,0.8)]"
+            }
+        ];
+
+        const SPELLS = [
+            { id: 1, name: "물의 장막 (물 생성)", icon: "💦", difficulty: 1, damage: 20, effect: { type: 'heal', value: 30, desc: "체력 30 회복" }, parts: [{ type: 'reactant', formula: 'H₂', elements: { H: 2 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }], solution: [2, 1, 2] },
+            { id: 2, name: "흑화의 저주 (구리 산화)", icon: "🌑", difficulty: 1, damage: 20, effect: { type: 'evasion', value: 1, desc: "다음 피격 1회 회피(Miss)" }, parts: [{ type: 'reactant', formula: 'Cu', elements: { Cu: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CuO', elements: { Cu: 1, O: 1 } }], solution: [2, 1, 2] },
+            { id: 3, name: "검은 가루 (탄소 연소)", icon: "🪨", difficulty: 1, damage: 20, parts: [{ type: 'reactant', formula: 'C', elements: { C: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }], solution: [1, 1, 1] },
+            { id: 4, name: "짠맛의 결정 (염화나트륨 생성)", icon: "🧂", difficulty: 1, damage: 20, effect: { type: 'draw', value: 2, desc: "턴 소모 없이 2장 뽑기" }, parts: [{ type: 'reactant', formula: 'Na', elements: { Na: 1 } }, { type: 'reactant', formula: 'Cl₂', elements: { Cl: 2 } }, { type: 'product', formula: 'NaCl', elements: { Na: 1, Cl: 1 } }], solution: [2, 1, 2] },
+            { id: 5, name: "섬광탄 (마그네슘 연소)", icon: "✨", difficulty: 2, damage: 35, effect: { type: 'stun', value: 1, desc: "보스 반격 1회 무효화" }, parts: [{ type: 'reactant', formula: 'Mg', elements: { Mg: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'MgO', elements: { Mg: 1, O: 1 } }], solution: [2, 1, 2] },
+            { id: 6, name: "정화의 거품 (과산화수소 분해)", icon: "🫧", difficulty: 2, damage: 35, effect: { type: 'heal', value: 50, desc: "체력 50 회복" }, parts: [{ type: 'reactant', formula: 'H₂O₂', elements: { H: 2, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }, { type: 'product', formula: 'O₂', elements: { O: 2 } }], solution: [2, 2, 1] },
+            { id: 7, name: "질식의 바람 (암모니아 생성)", icon: "💨", difficulty: 2, damage: 35, parts: [{ type: 'reactant', formula: 'N₂', elements: { N: 2 } }, { type: 'reactant', formula: 'H₂', elements: { H: 2 } }, { type: 'product', formula: 'NH₃', elements: { N: 1, H: 3 } }], solution: [1, 3, 2] },
+            { id: 8, name: "붉은 녹 (철의 산화)", icon: "🧲", difficulty: 2, damage: 35, parts: [{ type: 'reactant', formula: 'Fe', elements: { Fe: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'Fe₂O₃', elements: { Fe: 2, O: 3 } }], solution: [4, 3, 2] },
+            { id: 9, name: "환원의 일격 (산화구리 환원)", icon: "🔨", difficulty: 3, damage: 55, parts: [{ type: 'reactant', formula: 'CuO', elements: { Cu: 1, O: 1 } }, { type: 'reactant', formula: 'C', elements: { C: 1 } }, { type: 'product', formula: 'Cu', elements: { Cu: 1 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }], solution: [2, 1, 2, 1] },
+            { id: 10, name: "폭발 마법 (메테인 연소)", icon: "💥", difficulty: 3, damage: 55, effect: { type: 'crit', value: 1, desc: "100% 확률로 크리티컬" }, parts: [{ type: 'reactant', formula: 'CH₄', elements: { C: 1, H: 4 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }], solution: [1, 2, 1, 2] },
+            { id: 11, name: "팽창하는 대지 (탄산수소나트륨 분해)", icon: "🌋", difficulty: 3, damage: 55, parts: [{ type: 'reactant', formula: 'NaHCO₃', elements: { Na: 1, H: 1, C: 1, O: 3 } }, { type: 'product', formula: 'Na₂CO₃', elements: { Na: 2, C: 1, O: 3 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }], solution: [2, 1, 1, 1] },
+            { id: 12, name: "은빛 방패 (알루미늄 산화)", icon: "🛡️", difficulty: 3, damage: 55, effect: { type: 'shield', value: 1, desc: "다음 피격 데미지 50% 감소" }, parts: [{ type: 'reactant', formula: 'Al', elements: { Al: 1 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'Al₂O₃', elements: { Al: 2, O: 3 } }], solution: [4, 3, 2] },
+            { id: 13, name: "산소 폭발 (염소산칼륨 분해)", icon: "🧪", difficulty: 3, damage: 55, parts: [{ type: 'reactant', formula: 'KClO₃', elements: { K: 1, Cl: 1, O: 3 } }, { type: 'product', formula: 'KCl', elements: { K: 1, Cl: 1 } }, { type: 'product', formula: 'O₂', elements: { O: 2 } }], solution: [2, 2, 3] },
+            { id: 14, name: "대화재 (프로페인 연소)", icon: "🔥", difficulty: 3, damage: 70, parts: [{ type: 'reactant', formula: 'C₃H₈', elements: { C: 3, H: 8 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }], solution: [1, 5, 3, 4] },
+            { id: 15, name: "백색 침전 (탄산나트륨+염화칼슘)", icon: "🥛", difficulty: 3, damage: 60, parts: [{ type: 'reactant', formula: 'Na₂CO₃', elements: { Na: 2, C: 1, O: 3 } }, { type: 'reactant', formula: 'CaCl₂', elements: { Ca: 1, Cl: 2 } }, { type: 'product', formula: 'CaCO₃', elements: { Ca: 1, C: 1, O: 3 } }, { type: 'product', formula: 'NaCl', elements: { Na: 1, Cl: 1 } }], solution: [1, 1, 1, 2] },
+            { id: 16, name: "하늘의 분노 (질소+산소)", icon: "🌩️", difficulty: 2, damage: 45, effect: { type: 'double', value: 1, desc: "데미지 2배 증폭 폭발" }, parts: [{ type: 'reactant', formula: 'N₂', elements: { N: 2 } }, { type: 'reactant', formula: 'O₂', elements: { O: 2 } }, { type: 'product', formula: 'NO₂', elements: { N: 1, O: 2 } }], solution: [1, 2, 2] },
+            { id: 17, name: "부글부글 마법 (마그네슘+염산)", icon: "🧼", difficulty: 2, damage: 45, effect: { type: 'reflect', value: 1, desc: "다음 보스 공격 100% 반사" }, parts: [{ type: 'reactant', formula: 'Mg', elements: { Mg: 1 } }, { type: 'reactant', formula: 'HCl', elements: { H: 1, Cl: 1 } }, { type: 'product', formula: 'MgCl₂', elements: { Mg: 1, Cl: 2 } }, { type: 'product', formula: 'H₂', elements: { H: 2 } }], solution: [1, 2, 1, 1] },
+            { id: 18, name: "흰색 앙금 (염화나트륨+질산은)", icon: "🌫️", difficulty: 1, damage: 30, parts: [{ type: 'reactant', formula: 'NaCl', elements: { Na: 1, Cl: 1 } }, { type: 'reactant', formula: 'AgNO₃', elements: { Ag: 1, N: 1, O: 3 } }, { type: 'product', formula: 'AgCl', elements: { Ag: 1, Cl: 1 } }, { type: 'product', formula: 'NaNO₃', elements: { Na: 1, N: 1, O: 3 } }], solution: [1, 1, 1, 1] },
+            { id: 19, name: "기체 방출 (염산+탄산칼슘)", icon: "🌬️", difficulty: 3, damage: 70, parts: [{ type: 'reactant', formula: 'HCl', elements: { H: 1, Cl: 1 } }, { type: 'reactant', formula: 'CaCO₃', elements: { Ca: 1, C: 1, O: 3 } }, { type: 'product', formula: 'CaCl₂', elements: { Ca: 1, Cl: 2 } }, { type: 'product', formula: 'CO₂', elements: { C: 1, O: 2 } }, { type: 'product', formula: 'H₂O', elements: { H: 2, O: 1 } }], solution: [2, 1, 1, 1, 1] }
+        ];
+
+        function AlchemistGame() {
+            const PLAYER_MAX_HP = 300;
+
+            const [gameState, setGameState] = useState('intro');
+            const [currentBossIndex, setCurrentBossIndex] = useState(0);
+            const [bossHp, setBossHp] = useState(BOSSES[0].maxHp);
+            const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP);
+            const [hand, setHand] = useState([]);
+            const [selectedHandIndex, setSelectedHandIndex] = useState(null);
+            const [coefficients, setCoefficients] = useState([]);
+            const [practiceSpell, setPracticeSpell] = useState(null);
+            const [practiceStatus, setPracticeStatus] = useState('playing');
+            const [buffs, setBuffs] = useState({ shield: 0, evasion: 0, reflect: 0 });
+
+            const [animState, setAnimState] = useState({
+                player: 'idle', boss: 'idle', projectile: null, attacker: null, damageTextPlayer: null, damageTextBoss: null
+            });
+
+            const currentBoss = BOSSES[currentBossIndex];
+            const selectedSpell = selectedHandIndex !== null && hand.length > selectedHandIndex ? hand[selectedHandIndex] : null;
+
+            const getRandomSpell = () => SPELLS[Math.floor(Math.random() * SPELLS.length)];
+
+            const startGame = () => {
+                setCurrentBossIndex(0);
+                setBossHp(BOSSES[0].maxHp);
+                setPlayerHp(PLAYER_MAX_HP);
                 setBuffs({ shield: 0, evasion: 0, reflect: 0 });
+                setHand([getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell()]);
                 setGameState('battle');
-                setAnimState(prev => ({ ...prev, boss: 'idle' }));
-                } else {
-                setGameState('game_clear');
+            };
+
+            const startPractice = () => {
+                const spell = getRandomSpell();
+                setPracticeSpell(spell);
+                setCoefficients(new Array(spell.parts.length).fill(1));
+                setPracticeStatus('playing');
+                setGameState('practice');
+            };
+
+            const nextPractice = () => {
+                const spell = getRandomSpell();
+                setPracticeSpell(spell);
+                setCoefficients(new Array(spell.parts.length).fill(1));
+                setPracticeStatus('playing');
+            };
+
+            const checkPracticeResult = () => {
+                if (!practiceSpell) return;
+                const isCorrect = coefficients.every((val, index) => val === practiceSpell.solution[index]);
+                setPracticeStatus(isCorrect ? 'correct' : 'incorrect');
+            };
+
+            const executeBossAttack = (currentHp, currentBuffs, onComplete) => {
+                let damage = currentBoss.attack;
+                let pText = `-${damage}`;
+                let rDamage = 0;
+                let consumedBuff = null;
+
+                if (currentBuffs.evasion > 0) {
+                    damage = 0; pText = "회피! (Miss)"; consumedBuff = 'evasion';
+                } else if (currentBuffs.reflect > 0) {
+                    rDamage = damage; damage = 0; pText = "반사! ✨"; consumedBuff = 'reflect';
+                } else if (currentBuffs.shield > 0) {
+                    damage = Math.floor(damage / 2); pText = `-${damage} (방어 🛡️)`; consumedBuff = 'shield';
                 }
-                }, 1500);
-                } else {
-                if (skipBossAttack) {
-                setAnimState(prev => ({ ...prev, damageTextBoss: "기절함! 💫", boss: 'idle' }));
+
+                if (consumedBuff) {
+                    setBuffs(prev => ({ ...prev, [consumedBuff]: prev[consumedBuff] - 1 }));
+                }
+
+                setAnimState(prev => ({ ...prev, boss: 'attack', projectile: currentBoss.proj, attacker: 'boss' }));
+
                 setTimeout(() => {
-                setGameState('battle');
-                setAnimState(prev => ({ ...prev, damageTextBoss: null }));
-                }, 800);
-                } else {
-                executeBossAttack(newPlayerHp, nextBuffs, () => {
-                setGameState('battle');
-                setAnimState(prev => ({ ...prev, player: 'idle', damageTextPlayer: null, damageTextBoss: null }));
-                });
-                }
-                }
-                }, 1000);
+                    const newHp = Math.max(0, currentHp - damage);
+                    setPlayerHp(newHp);
+
+                    let newBossHpStr = null;
+                    if (rDamage > 0) {
+                        setBossHp(prev => Math.max(1, prev - rDamage));
+                        newBossHpStr = `-${rDamage} 반사!`;
+                    }
+
+                    setAnimState(prev => ({
+                        ...prev,
+                        player: 'hurt',
+                        boss: 'idle',
+                        projectile: null,
+                        damageTextPlayer: pText,
+                        ...(newBossHpStr ? { damageTextBoss: newBossHpStr } : {})
+                    }));
+
+                    setTimeout(() => {
+                        if (newHp === 0) {
+                            setGameState('game_over');
+                        } else {
+                            if (onComplete) onComplete(newHp);
+                        }
+                    }, 1000);
                 }, 500);
-                } else {
-                setAnimState(prev => ({ ...prev, damageTextBoss: "Miss!" }));
-                setTimeout(() => {
-                executeBossAttack(playerHp, buffs, () => {
-                setGameState('battle');
-                setAnimState(prev => ({ ...prev, player: 'idle', damageTextPlayer: null, damageTextBoss: null }));
+            };
+
+            const drawCard = () => {
+                if (hand.length >= 5) return;
+                executeBossAttack(playerHp, buffs, (newHp) => {
+                    setHand(prev => {
+                        if (prev.length < 5) return [...prev, getRandomSpell()];
+                        return prev;
+                    });
+                    setAnimState(prev => ({ ...prev, player: 'idle', damageTextPlayer: null, damageTextBoss: null }));
                 });
-                }, 800);
+            };
+
+            const handleSpellSelect = (index) => {
+                setSelectedHandIndex(index);
+                setCoefficients(new Array(hand[index].parts.length).fill(1));
+                setGameState('solving');
+            };
+
+            const updateCoefficient = (index, delta) => {
+                const newCoeffs = [...coefficients];
+                newCoeffs[index] = Math.max(1, newCoeffs[index] + delta);
+                setCoefficients(newCoeffs);
+                if (gameState === 'practice' && practiceStatus === 'incorrect') setPracticeStatus('playing');
+            };
+
+            const calculateAtoms = (spell) => {
+                const leftAtoms = {};
+                const rightAtoms = {};
+                if (!spell || coefficients.length === 0) return { leftAtoms, rightAtoms };
+                spell.parts.forEach((part, index) => {
+                    const coeff = coefficients[index];
+                    Object.entries(part.elements).forEach(([el, count]) => {
+                        if (part.type === 'reactant') leftAtoms[el] = (leftAtoms[el] || 0) + (count * coeff);
+                        else rightAtoms[el] = (rightAtoms[el] || 0) + (count * coeff);
+                    });
+                });
+                return { leftAtoms, rightAtoms };
+            };
+
+            const castSpell = () => {
+                if (!selectedSpell) return;
+                const isCorrect = coefficients.every((v, i) => v === selectedSpell.solution[i]);
+                const effect = selectedSpell.effect;
+
+                setHand(prev => prev.filter((_, i) => i !== selectedHandIndex));
+                setSelectedHandIndex(null);
+
+                if (isCorrect) {
+                    let nextBuffs = { ...buffs };
+                    let skipBossAttack = false;
+                    let hpHeal = 0;
+                    let extraDraw = 0;
+
+                    let finalDamage = selectedSpell.damage;
+                    let isCrit = Math.random() < 0.1;
+
+                    if (effect) {
+                        if (effect.type === 'crit') isCrit = true;
+                        if (effect.type === 'double') finalDamage *= 2;
+                        if (effect.type === 'shield') nextBuffs.shield += 1;
+                        if (effect.type === 'evasion') nextBuffs.evasion += 1;
+                        if (effect.type === 'reflect') nextBuffs.reflect += 1;
+                        if (effect.type === 'stun') skipBossAttack = true;
+                        if (effect.type === 'heal') hpHeal = effect.value;
+                        if (effect.type === 'draw') extraDraw = effect.value;
+                    }
+
+                    if (isCrit) finalDamage *= 2;
+
+                    setBuffs(nextBuffs);
+
+                    let newPlayerHp = playerHp;
+                    if (hpHeal > 0) {
+                        newPlayerHp = Math.min(PLAYER_MAX_HP, playerHp + hpHeal);
+                        setPlayerHp(newPlayerHp);
+                    }
+
+                    if (extraDraw > 0) {
+                        setHand(prev => {
+                            let newHand = [...prev];
+                            for (let i = 0; i < extraDraw; i++) {
+                                if (newHand.length < 5) newHand.push(getRandomSpell());
+                            }
+                            return newHand;
+                        });
+                    }
+
+                    setAnimState(prev => ({
+                        ...prev,
+                        player: 'attack',
+                        projectile: selectedSpell.icon,
+                        attacker: 'player',
+                        damageTextPlayer: hpHeal > 0 ? `+${hpHeal} 회복! 💚` : null
+                    }));
+
+                    setTimeout(() => {
+                        const newBossHp = Math.max(0, bossHp - finalDamage);
+                        setBossHp(newBossHp);
+                        setAnimState(prev => ({
+                            ...prev,
+                            player: 'idle',
+                            boss: 'hurt',
+                            projectile: null,
+                            damageTextBoss: isCrit ? `-${finalDamage} 크리티컬!🔥` : `-${finalDamage}`
+                        }));
+
+                        setTimeout(() => {
+                            setAnimState(prev => ({ ...prev, damageTextPlayer: null }));
+                            if (newBossHp === 0) {
+                                setAnimState(prev => ({ ...prev, boss: 'dead', damageTextBoss: null }));
+                                setTimeout(() => {
+                                    if (currentBossIndex + 1 < BOSSES.length) {
+                                        setPlayerHp(prev => Math.min(PLAYER_MAX_HP, prev + 200));
+                                        setCurrentBossIndex(prev => prev + 1);
+                                        setBossHp(BOSSES[currentBossIndex + 1].maxHp);
+                                        setHand([getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell(), getRandomSpell()]);
+                                        setBuffs({ shield: 0, evasion: 0, reflect: 0 });
+                                        setGameState('battle');
+                                        setAnimState(prev => ({ ...prev, boss: 'idle' }));
+                                    } else {
+                                        setGameState('game_clear');
+                                    }
+                                }, 1500);
+                            } else {
+                                if (skipBossAttack) {
+                                    setAnimState(prev => ({ ...prev, damageTextBoss: "기절함! 💫", boss: 'idle' }));
+                                    setTimeout(() => {
+                                        setGameState('battle');
+                                        setAnimState(prev => ({ ...prev, damageTextBoss: null }));
+                                    }, 800);
+                                } else {
+                                    executeBossAttack(newPlayerHp, nextBuffs, () => {
+                                        setGameState('battle');
+                                        setAnimState(prev => ({ ...prev, player: 'idle', damageTextPlayer: null, damageTextBoss: null }));
+                                    });
+                                }
+                            }
+                        }, 1000);
+                    }, 500);
+                } else {
+                    setAnimState(prev => ({ ...prev, damageTextBoss: "Miss!" }));
+                    setTimeout(() => {
+                        executeBossAttack(playerHp, buffs, () => {
+                            setGameState('battle');
+                            setAnimState(prev => ({ ...prev, player: 'idle', damageTextPlayer: null, damageTextBoss: null }));
+                        });
+                    }, 800);
                 }
-                };
+            };
 
-                const EquationRow = ({ spell, isPractice }) => {
+            const EquationRow = ({ spell, isPractice }) => {
                 return (
-                <div
-                    className="flex flex-wrap justify-center items-center gap-y-4 gap-x-1 sm:gap-x-2 text-lg sm:text-2xl font-bold bg-slate-950 p-4 sm:p-5 rounded-xl border border-indigo-500/30 mb-6 shadow-inner w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    {spell.parts.map((part, index) => {
-                    const isFirstProduct = index > 0 && part.type === 'product' && spell.parts[index - 1].type ===
-                    'reactant';
-                    const isPlus = index > 0 && !isFirstProduct;
+                    <div className="flex flex-wrap justify-center items-center gap-y-4 gap-x-1 sm:gap-x-2 text-lg sm:text-2xl font-bold bg-slate-950 p-4 sm:p-5 rounded-xl border border-indigo-500/30 mb-6 shadow-inner w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
+                        {spell.parts.map((part, index) => {
+                            const isFirstProduct = index > 0 && part.type === 'product' && spell.parts[index - 1].type === 'reactant';
+                            const isPlus = index > 0 && !isFirstProduct;
 
-                    return (
-                    <div key={index} className="flex items-center">
-                        {isFirstProduct && <span className="text-emerald-400 mx-2 sm:mx-3 shrink-0">➔</span>}
-                        {isPlus && <span className="text-slate-500 mx-1 sm:mx-2 shrink-0">+</span>}
+                            return (
+                                <div key={index} className="flex items-center">
+                                    {isFirstProduct && <span className="text-emerald-400 mx-2 sm:mx-3 shrink-0">➔</span>}
+                                    {isPlus && <span className="text-slate-500 mx-1 sm:mx-2 shrink-0">+</span>}
 
-                        <div className={`flex items-center bg-slate-800 rounded-lg p-1 border ${isPractice
-                            ? 'border-teal-500/30' : 'border-indigo-500/30' } hover:border-white transition-colors`}>
-                            <div className="flex flex-col">
-                                <button onClick={()=> updateCoefficient(index, 1)} disabled={isPractice &&
-                                    practiceStatus === 'correct'} className="p-0.5 sm:p-1 text-[10px] text-slate-500
-                                    hover:text-white hover:bg-slate-700 rounded-t disabled:opacity-0">▲</button>
-                                <button onClick={()=> updateCoefficient(index, -1)} disabled={isPractice &&
-                                    practiceStatus === 'correct'} className="p-0.5 sm:p-1 text-[10px] text-slate-500
-                                    hover:text-white hover:bg-slate-700 rounded-b disabled:opacity-0">▼</button>
-                            </div>
-                            <div className="w-5 sm:w-7 text-center text-indigo-400 text-lg sm:text-2xl">
-                                {coefficients[index] === 1 ? ' ' : coefficients[index]}
-                            </div>
-                            <div
-                                className="pr-1 sm:pr-2 text-white font-mono text-base sm:text-2xl flex items-baseline">
-                                {part.formula.split('').map((char, i) => (
-                                isNaN(char) ? char : <sub key={i}
-                                    className="text-[10px] sm:text-xs opacity-70 ml-0.5">{char}</sub>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    );
-                    })}
-                </div>
-                );
-                };
-
-                const AtomDashboard = ({ leftAtoms, rightAtoms, isPractice }) => {
-                const allElements = Array.from(new Set([...Object.keys(leftAtoms), ...Object.keys(rightAtoms)]));
-                return (
-                <div className="w-full flex flex-col gap-1.5 mb-6 animate-in fade-in duration-500">
-                    <div className="grid grid-cols-2 gap-4 text-center mb-1">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">반응물 영역
-                        </div>
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">생성물 영역
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        {allElements.map(el => {
-                        const lc = leftAtoms[el] || 0;
-                        const rc = rightAtoms[el] || 0;
-                        const isBalanced = lc === rc;
-                        const themeColor = isPractice ? 'teal' : 'indigo';
-                        return (
-                        <div key={el} className="flex items-center gap-2">
-                            <div className={`flex-1 flex justify-end items-center p-1.5 sm:p-2 rounded-l-lg border-y
-                                border-l transition-all ${isBalanced ? `bg-${themeColor}-900/20
-                                border-${themeColor}-500/40` : 'bg-slate-800/50 border-slate-700' }`}>
-                                <span className={`text-xs sm:text-sm font-mono font-bold ${isBalanced ?
-                                    `text-${themeColor}-400` : 'text-slate-300' }`}>{lc}</span>
-                            </div>
-                            <div className={`z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full
-                                border font-black text-xs sm:text-sm shadow-md shrink-0 transition-transform
-                                ${isBalanced ? `bg-${themeColor}-600 border-${themeColor}-400 text-white scale-110`
-                                : 'bg-slate-700 border-slate-500 text-slate-300' }`}>
-                                {el}
-                            </div>
-                            <div className={`flex-1 flex justify-start items-center p-1.5 sm:p-2 rounded-r-lg border-y
-                                border-r transition-all ${isBalanced ? `bg-${themeColor}-900/20
-                                border-${themeColor}-500/40` : 'bg-slate-800/50 border-slate-700' }`}>
-                                <span className={`text-xs sm:text-sm font-mono font-bold ${isBalanced ?
-                                    `text-${themeColor}-400` : 'text-slate-300' }`}>{rc}</span>
-                            </div>
-                        </div>
-                        );
+                                    <div className={`flex items-center bg-slate-800 rounded-lg p-1 border ${isPractice ? 'border-teal-500/30' : 'border-indigo-500/30'} hover:border-white transition-colors`}>
+                                        <div className="flex flex-col">
+                                            <button onClick={() => updateCoefficient(index, 1)} disabled={isPractice && practiceStatus === 'correct'} className="p-0.5 sm:p-1 text-[10px] text-slate-500 hover:text-white hover:bg-slate-700 rounded-t disabled:opacity-0">▲</button>
+                                            <button onClick={() => updateCoefficient(index, -1)} disabled={isPractice && practiceStatus === 'correct'} className="p-0.5 sm:p-1 text-[10px] text-slate-500 hover:text-white hover:bg-slate-700 rounded-b disabled:opacity-0">▼</button>
+                                        </div>
+                                        <div className="w-5 sm:w-7 text-center text-indigo-400 text-lg sm:text-2xl">
+                                            {coefficients[index] === 1 ? ' ' : coefficients[index]}
+                                        </div>
+                                        <div className="pr-1 sm:pr-2 text-white font-mono text-base sm:text-2xl flex items-baseline">
+                                            {part.formula.split('').map((char, i) => (
+                                                isNaN(char) ? char : <sub key={i} className="text-[10px] sm:text-xs opacity-70 ml-0.5">{char}</sub>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
                         })}
                     </div>
-                </div>
                 );
-                };
+            };
 
-                if (gameState === 'intro') {
+            const AtomDashboard = ({ leftAtoms, rightAtoms, isPractice }) => {
+                const allElements = Array.from(new Set([...Object.keys(leftAtoms), ...Object.keys(rightAtoms)]));
                 return (
-                <div
-                    className="flex flex-col items-center justify-center min-h-[650px] bg-gradient-to-b from-slate-950 to-indigo-950 text-white rounded-xl p-6 sm:p-10 font-sans shadow-2xl border border-indigo-500/30 overflow-hidden relative">
-                    <div className="absolute top-10 left-10 text-4xl opacity-10 animate-float-slow">🫧</div>
-                    <div className="absolute bottom-20 right-10 text-4xl opacity-10 animate-float-fast">💥</div>
-
-                    <div className="flex items-center gap-4 mb-4 z-10">
-                        <div className="text-7xl animate-player-hover drop-shadow-[0_0_15px_rgba(52,211,153,0.6)]">🧑‍🎓
+                    <div className="w-full flex flex-col gap-1.5 mb-6 animate-in fade-in duration-500">
+                        <div className="grid grid-cols-2 gap-4 text-center mb-1">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">반응물 영역</div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">생성물 영역</div>
                         </div>
-                        <div className="text-4xl text-yellow-400 animate-pulse">⚡</div>
-                        <div className="text-7xl animate-boss-menace drop-shadow-[0_0_20px_rgba(225,29,72,0.8)]">👨‍🏫
+                        <div className="flex flex-col gap-1.5">
+                            {allElements.map(el => {
+                                const lc = leftAtoms[el] || 0;
+                                const rc = rightAtoms[el] || 0;
+                                const isBalanced = lc === rc;
+                                const themeColor = isPractice ? 'teal' : 'indigo';
+                                return (
+                                    <div key={el} className="flex items-center gap-2">
+                                        <div className={`flex-1 flex justify-end items-center p-1.5 sm:p-2 rounded-l-lg border-y border-l transition-all ${isBalanced ? `bg-${themeColor}-900/20 border-${themeColor}-500/40` : 'bg-slate-800/50 border-slate-700'}`}>
+                                            <span className={`text-xs sm:text-sm font-mono font-bold ${isBalanced ? `text-${themeColor}-400` : 'text-slate-300'}`}>{lc}</span>
+                                        </div>
+                                        <div className={`z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full border font-black text-xs sm:text-sm shadow-md shrink-0 transition-transform ${isBalanced ? `bg-${themeColor}-600 border-${themeColor}-400 text-white scale-110` : 'bg-slate-700 border-slate-500 text-slate-300'}`}>
+                                            {el}
+                                        </div>
+                                        <div className={`flex-1 flex justify-start items-center p-1.5 sm:p-2 rounded-r-lg border-y border-r transition-all ${isBalanced ? `bg-${themeColor}-900/20 border-${themeColor}-500/40` : 'bg-slate-800/50 border-slate-700'}`}>
+                                            <span className={`text-xs sm:text-sm font-mono font-bold ${isBalanced ? `text-${themeColor}-400` : 'text-slate-300'}`}>{rc}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
-
-                    <h1
-                        className="text-3xl sm:text-5xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-yellow-400 text-center leading-tight z-10 drop-shadow-lg">
-                        케미컬 가디언즈 :<br />화학반응 마스터
-                    </h1>
-
-                    <div
-                        className="bg-slate-900/80 p-5 rounded-2xl border border-slate-700 max-w-md w-full mb-8 shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-md z-10">
-                        <h2 className="text-emerald-400 font-bold mb-3 flex items-center gap-2 text-sm sm:text-base">
-                            <BookOpen className="w-4 h-4" /> 연금술사 지침서 (가이드)
-                        </h2>
-                        <ul className="text-xs sm:text-sm text-slate-300 space-y-2.5">
-                            <li className="flex gap-2">
-                                <span className="text-emerald-500 font-bold">1.</span>
-                                <span>화학 반응식의 <b>반응물(좌)</b>과 <b>생성물(우)</b>의 원자 개수가 같아지도록 계수를 조정하세요.</span>
-                            </li>
-                            <li className="flex gap-2">
-                                <span className="text-emerald-500 font-bold">2.</span>
-                                <span>계수를 맞추면 강력한 공격이 시전됩니다. (새로운 특수 마법 스킬이 9종 추가되었습니다!)</span>
-                            </li>
-                            <li className="flex gap-2 text-yellow-400 font-semibold italic">
-                                <span className="text-yellow-500">★</span>
-                                <span>LUCKY! 모든 공격은 10%의 확률로 2배의 <b>크리티컬 데미지</b>가 적용됩니다!</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-10">
-                        <button onClick={startPractice}
-                            className="px-8 py-4 bg-teal-700 hover:bg-teal-600 rounded-full text-xl font-bold flex items-center justify-center gap-2 transition transform hover:scale-105 shadow-[0_0_15px_rgba(15,118,110,0.6)]">
-                            <Beaker className="w-6 h-6" /> 연금술 훈련소
-                        </button>
-                        <button onClick={startGame}
-                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xl font-bold flex items-center justify-center gap-2 transition transform hover:scale-105 shadow-[0_0_15px_rgba(79,70,229,0.6)]">
-                            <Swords className="w-6 h-6" /> 실전 테스트
-                        </button>
-                    </div>
-                </div>
                 );
-                }
+            };
 
-                if (gameState === 'practice') {
+            if (gameState === 'intro') {
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-[650px] bg-gradient-to-b from-slate-950 to-indigo-950 text-white rounded-xl p-6 sm:p-10 font-sans shadow-2xl border border-indigo-500/30 overflow-hidden relative">
+                        <div className="absolute top-10 left-10 text-4xl opacity-10 animate-float-slow">🫧</div>
+                        <div className="absolute bottom-20 right-10 text-4xl opacity-10 animate-float-fast">💥</div>
+
+                        <div className="flex items-center gap-4 mb-4 z-10">
+                            <div className="text-7xl animate-player-hover drop-shadow-[0_0_15px_rgba(52,211,153,0.6)]">🧑‍🎓</div>
+                            <div className="text-4xl text-yellow-400 animate-pulse">⚡</div>
+                            <div className="text-7xl animate-boss-menace drop-shadow-[0_0_20px_rgba(225,29,72,0.8)]">👨‍🏫</div>
+                        </div>
+
+                        <h1 className="text-3xl sm:text-5xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-yellow-400 text-center leading-tight z-10 drop-shadow-lg">
+                            케미컬 가디언즈 :<br />화학반응 마스터
+                        </h1>
+
+                        <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-700 max-w-md w-full mb-8 shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-md z-10">
+                            <h2 className="text-emerald-400 font-bold mb-3 flex items-center gap-2 text-sm sm:text-base">
+                                📖 연금술사 지침서 (가이드)
+                            </h2>
+                            <ul className="text-xs sm:text-sm text-slate-300 space-y-2.5">
+                                <li className="flex gap-2">
+                                    <span className="text-emerald-500 font-bold">1.</span>
+                                    <span>화학 반응식의 <b>반응물(좌)</b>과 <b>생성물(우)</b>의 원자 개수가 같아지도록 계수를 조정하세요.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-emerald-500 font-bold">2.</span>
+                                    <span>계수를 맞추면 강력한 공격이 시전됩니다. (새로운 특수 마법 스킬이 9종 추가되었습니다!)</span>
+                                </li>
+                                <li className="flex gap-2 text-yellow-400 font-semibold italic">
+                                    <span className="text-yellow-500">★</span>
+                                    <span>LUCKY! 모든 공격은 10%의 확률로 2배의 <b>크리티컬 데미지</b>가 적용됩니다!</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto z-10">
+                            <button onClick={startPractice} className="px-8 py-4 bg-teal-700 hover:bg-teal-600 rounded-full text-xl font-bold flex items-center justify-center gap-2 transition transform hover:scale-105 shadow-[0_0_15px_rgba(15,118,110,0.6)]">
+                                ⚗️ 연금술 훈련소
+                            </button>
+                            <button onClick={startGame} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xl font-bold flex items-center justify-center gap-2 transition transform hover:scale-105 shadow-[0_0_15px_rgba(79,70,229,0.6)]">
+                                ⚔️ 실전 테스트
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (gameState === 'practice') {
                 const { leftAtoms, rightAtoms } = calculateAtoms(practiceSpell);
                 return (
-                <div
-                    className="max-w-4xl mx-auto min-h-[650px] bg-gradient-to-b from-teal-950 to-slate-900 text-slate-100 rounded-xl p-4 sm:p-8 font-sans shadow-2xl border border-teal-700 flex flex-col">
-                    <div className="flex justify-between items-center mb-6 border-b border-teal-500/30 pb-4">
-                        <h2 className="text-xl font-bold text-teal-300 flex items-center gap-2">
-                            <Beaker className="w-5 h-5" /> 연금술 훈련소
-                        </h2>
-                        <button onClick={()=> setGameState('intro')} className="px-3 py-1 bg-slate-800
-                            hover:bg-slate-700 rounded text-xs text-slate-400 transition">메인으로</button>
-                    </div>
-                    <div className="flex-1 flex flex-col items-center w-full overflow-y-auto scrollbar-hide">
-                        <div className="text-center mb-6">
-                            <h3 className="text-xl font-bold mb-1 flex items-center justify-center gap-2">
-                                <span className="animate-float-fast">{practiceSpell.icon}</span> {practiceSpell.name}
-                            </h3>
-                            <p className="text-xs text-slate-400">화살표 좌우의 원자 개수를 똑같이 맞추세요.</p>
+                    <div className="max-w-4xl mx-auto min-h-[650px] bg-gradient-to-b from-teal-950 to-slate-900 text-slate-100 rounded-xl p-4 sm:p-8 font-sans shadow-2xl border border-teal-700 flex flex-col">
+                        <div className="flex justify-between items-center mb-6 border-b border-teal-500/30 pb-4">
+                            <h2 className="text-xl font-bold text-teal-300 flex items-center gap-2">
+                                ⚗️ 연금술 훈련소
+                            </h2>
+                            <button onClick={() => setGameState('intro')} className="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-400 transition">메인으로</button>
                         </div>
-                        <EquationRow spell={practiceSpell} isPractice={true} />
-                        <AtomDashboard leftAtoms={leftAtoms} rightAtoms={rightAtoms} isPractice={true} />
-                        <div className="mt-auto pt-6 flex items-center justify-center w-full">
-                            {practiceStatus === 'correct' ? (
-                            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                                <p className="text-lg font-bold text-emerald-400 mb-4 animate-pulse">✨ 완벽한 평형입니다!</p>
-                                <button onClick={nextPractice}
-                                    className="px-10 py-3 bg-teal-500 hover:bg-teal-400 text-slate-900 rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(20,184,166,0.6)] transition transform hover:scale-105">다음
-                                    문제
-                                    <ArrowRight className="w-5 h-5" />
-                                </button>
+                        <div className="flex-1 flex flex-col items-center w-full overflow-y-auto scrollbar-hide">
+                            <div className="text-center mb-6">
+                                <h3 className="text-xl font-bold mb-1 flex items-center justify-center gap-2">
+                                    <span className="animate-float-fast">{practiceSpell.icon}</span> {practiceSpell.name}
+                                </h3>
+                                <p className="text-xs text-slate-400">화살표 좌우의 원자 개수를 똑같이 맞추세요.</p>
                             </div>
-                            ) : (
-                            <button onClick={checkPracticeResult}
-                                className="w-full max-w-xs py-4 bg-teal-700 hover:bg-teal-600 text-white rounded-xl font-bold text-lg transition shadow-lg hover:shadow-[0_0_15px_rgba(15,118,110,0.5)]">계수
-                                확인</button>
-                            )}
+                            <EquationRow spell={practiceSpell} isPractice={true} />
+                            <AtomDashboard leftAtoms={leftAtoms} rightAtoms={rightAtoms} isPractice={true} />
+                            <div className="mt-auto pt-6 flex items-center justify-center w-full">
+                                {practiceStatus === 'correct' ? (
+                                    <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                                        <p className="text-lg font-bold text-emerald-400 mb-4 animate-pulse">✨ 완벽한 평형입니다!</p>
+                                        <button onClick={nextPractice} className="px-10 py-3 bg-teal-500 hover:bg-teal-400 text-slate-900 rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(20,184,166,0.6)] transition transform hover:scale-105">다음 문제 ➔</button>
+                                    </div>
+                                ) : (
+                                    <button onClick={checkPracticeResult} className="w-full max-w-xs py-4 bg-teal-700 hover:bg-teal-600 text-white rounded-xl font-bold text-lg transition shadow-lg hover:shadow-[0_0_15px_rgba(15,118,110,0.5)]">계수 확인</button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
                 );
-                }
+            }
 
-                if (gameState === 'game_over' || gameState === 'game_clear') {
+            if (gameState === 'game_over' || gameState === 'game_clear') {
                 const isWin = gameState === 'game_clear';
                 return (
-                <div className={`flex flex-col items-center justify-center min-h-[650px] rounded-xl p-8 font-sans
-                    ${isWin ? 'bg-gradient-to-b from-yellow-900 to-slate-900'
-                    : 'bg-gradient-to-b from-rose-950 to-black' } text-white border ${isWin ? 'border-yellow-500/50'
-                    : 'border-rose-500/50' }`}>
-                    {isWin ?
-                    <Trophy
-                        className="w-32 h-32 text-yellow-400 mb-6 animate-float-slow drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]" />
-                    :
-                    <Skull className="w-32 h-32 text-rose-500 mb-6 animate-pulse" />}
-                    <h1 className={`text-4xl sm:text-5xl font-black mb-4 text-center ${isWin
-                        ? 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]'
-                        : 'text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]' }`}>{isWin ? "화학 마스터!" : "재수강
-                        확정..."}</h1>
-                    <p className="text-lg mb-8 text-slate-300 text-center max-w-md">{isWin ? "주성쌤의 19가지 시련을 모두 극복했습니다!"
-                        : "기초 화학 법칙을 다시 복습하고 도전하세요."}</p>
-                    <button onClick={()=> setGameState('intro')} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500
-                        rounded-full font-bold transition shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:scale-105
-                        transform">타이틀로 돌아가기</button>
-                </div>
+                    <div className={`flex flex-col items-center justify-center min-h-[650px] rounded-xl p-8 font-sans ${isWin ? 'bg-gradient-to-b from-yellow-900 to-slate-900' : 'bg-gradient-to-b from-rose-950 to-black'} text-white border ${isWin ? 'border-yellow-500/50' : 'border-rose-500/50'}`}>
+                        {isWin ? <div className="text-8xl mb-6 animate-float-slow drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">🏆</div> : <div className="text-8xl mb-6 animate-pulse">💀</div>}
+                        <h1 className={`text-4xl sm:text-5xl font-black mb-4 text-center ${isWin ? 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]' : 'text-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]'}`}>{isWin ? "화학 마스터!" : "재수강 확정..."}</h1>
+                        <p className="text-lg mb-8 text-slate-300 text-center max-w-md">{isWin ? "주성쌤의 19가지 시련을 모두 극복했습니다!" : "기초 화학 법칙을 다시 복습하고 도전하세요."}</p>
+                        <button onClick={() => setGameState('intro')} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-full font-bold transition shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:scale-105 transform">타이틀로 돌아가기</button>
+                    </div>
                 );
-                }
+            }
 
-                return (
-                <div className={`max-w-4xl mx-auto min-h-[650px] bg-gradient-to-b ${currentBoss.bgClass} text-slate-100
-                    rounded-xl p-4 sm:p-6 font-sans shadow-2xl border border-slate-700 flex flex-col relative
-                    overflow-hidden transition-colors duration-1000`}>
+            return (
+                <div className={`max-w-4xl mx-auto min-h-[650px] bg-gradient-to-b ${currentBoss.bgClass} text-slate-100 rounded-xl p-4 sm:p-6 font-sans shadow-2xl border border-slate-700 flex flex-col relative overflow-hidden transition-colors duration-1000`}>
                     {/* HUD */}
                     <div className="flex justify-between items-start mb-4 relative z-10 gap-2">
-                        <div
-                            className="bg-slate-900/80 p-2 sm:p-3 rounded-xl border border-emerald-500/30 flex-1 backdrop-blur-sm">
-                            <div
-                                className="text-emerald-400 font-bold text-[10px] sm:text-xs mb-1 flex justify-between items-center gap-1">
+                        <div className="bg-slate-900/80 p-2 sm:p-3 rounded-xl border border-emerald-500/30 flex-1 backdrop-blur-sm">
+                            <div className="text-emerald-400 font-bold text-[10px] sm:text-xs mb-1 flex justify-between items-center gap-1">
                                 <span>🧑‍🎓 케미컬 가디언즈</span>
                                 <div className="flex gap-1">
-                                    {buffs.shield > 0 && <span
-                                        className="text-[8px] bg-blue-900/60 text-blue-300 px-1 rounded border border-blue-600">🛡️방어</span>}
-                                    {buffs.evasion > 0 && <span
-                                        className="text-[8px] bg-gray-700/60 text-gray-200 px-1 rounded border border-gray-500">💨회피</span>}
-                                    {buffs.reflect > 0 && <span
-                                        className="text-[8px] bg-purple-900/60 text-purple-300 px-1 rounded border border-purple-600">✨반사</span>}
+                                    {buffs.shield > 0 && <span className="text-[8px] bg-blue-900/60 text-blue-300 px-1 rounded border border-blue-600">🛡️방어</span>}
+                                    {buffs.evasion > 0 && <span className="text-[8px] bg-gray-700/60 text-gray-200 px-1 rounded border border-gray-500">💨회피</span>}
+                                    {buffs.reflect > 0 && <span className="text-[8px] bg-purple-900/60 text-purple-300 px-1 rounded border border-purple-600">✨반사</span>}
                                 </div>
                             </div>
                             <div className="w-full bg-slate-950 rounded-full h-1.5 mb-1 overflow-hidden shadow-inner">
-                                <div className="bg-emerald-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-                                    style={{ width: `${(playerHp/PLAYER_MAX_HP)*100}%` }}></div>
+                                <div className="bg-emerald-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" style={{ width: `${(playerHp / PLAYER_MAX_HP) * 100}%` }}></div>
                             </div>
-                            <div className="text-[8px] text-slate-400 flex justify-between">
-                                <span>MENTAL</span><span>{playerHp}/{PLAYER_MAX_HP}</span></div>
+                            <div className="text-[8px] text-slate-400 flex justify-between"><span>MENTAL</span><span>{playerHp}/{PLAYER_MAX_HP}</span></div>
                         </div>
-                        <div
-                            className="bg-slate-900/80 p-2 sm:p-3 rounded-xl border border-rose-500/50 flex-1 text-right backdrop-blur-sm">
-                            <div className="text-rose-400 font-bold text-[10px] sm:text-xs mb-1">{currentBoss.name}
-                                {currentBoss.icon}</div>
+                        <div className="bg-slate-900/80 p-2 sm:p-3 rounded-xl border border-rose-500/50 flex-1 text-right backdrop-blur-sm">
+                            <div className="text-rose-400 font-bold text-[10px] sm:text-xs mb-1">{currentBoss.name} {currentBoss.icon}</div>
                             <div className="w-full bg-slate-950 rounded-full h-1.5 mb-1 overflow-hidden shadow-inner">
-                                <div className="bg-rose-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]"
-                                    style={{ width: `${(bossHp/currentBoss.maxHp)*100}%` }}></div>
+                                <div className="bg-rose-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(225,29,72,0.8)]" style={{ width: `${(bossHp / currentBoss.maxHp) * 100}%` }}></div>
                             </div>
-                            <div className="text-[8px] text-slate-400 flex justify-between">
-                                <span>{bossHp}/{currentBoss.maxHp}</span><span>HP</span></div>
+                            <div className="text-[8px] text-slate-400 flex justify-between"><span>{bossHp}/{currentBoss.maxHp}</span><span>HP</span></div>
                         </div>
                     </div>
 
                     {/* Battle Scene */}
                     <div className="flex justify-between items-center px-6 sm:px-12 py-4 min-h-[140px] relative z-0">
                         <div className="relative">
-                            <div className={`text-6xl sm:text-7xl transition-all duration-300
-                                ${animState.player==='attack' ? 'translate-x-12 scale-110' : animState.player==='hurt'
-                                ? 'animate-shake brightness-50'
-                                : 'animate-player-hover drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]' }`}>
+                            <div className={`text-6xl sm:text-7xl transition-all duration-300 ${animState.player === 'attack' ? 'translate-x-12 scale-110' : animState.player === 'hurt' ? 'animate-shake brightness-50' : 'animate-player-hover drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]'}`}>
                                 🧑‍🎓
                             </div>
-                            {animState.damageTextPlayer && <div className={`absolute -top-6 -right-6 text-2xl font-black
-                                ${animState.damageTextPlayer.includes('회복') ? 'text-emerald-400' : 'text-rose-500' }
-                                animate-bounce whitespace-nowrap drop-shadow-md`}>{animState.damageTextPlayer}</div>}
+                            {animState.damageTextPlayer && <div className={`absolute -top-6 -right-6 text-2xl font-black ${animState.damageTextPlayer.includes('회복') ? 'text-emerald-400' : 'text-rose-500'} animate-bounce whitespace-nowrap drop-shadow-md`}>{animState.damageTextPlayer}</div>}
                         </div>
 
-                        <div
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
                             {animState.projectile && (
-                            <div className={`text-5xl animate-in fade-in duration-200
-                                drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] ${animState.attacker==='player'
-                                ? 'animate-projectile-right' : 'animate-projectile-left' }`}>
-                                {animState.projectile}
-                            </div>
+                                <div className={`text-5xl animate-in fade-in duration-200 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] ${animState.attacker === 'player' ? 'animate-projectile-right' : 'animate-projectile-left'}`}>
+                                    {animState.projectile}
+                                </div>
                             )}
                         </div>
 
                         <div className="relative">
-                            <div className={`text-6xl sm:text-7xl transition-all duration-300 ${animState.boss==='hurt'
-                                ? 'scale-90 brightness-200 animate-shake' : animState.boss==='attack'
-                                ? '-translate-x-12 scale-110' : animState.boss==='dead' ? 'opacity-0 scale-50 rotate-90'
-                                : currentBoss.animClass}`}>
+                            <div className={`text-6xl sm:text-7xl transition-all duration-300 ${animState.boss === 'hurt' ? 'scale-90 brightness-200 animate-shake' : animState.boss === 'attack' ? '-translate-x-12 scale-110' : animState.boss === 'dead' ? 'opacity-0 scale-50 rotate-90' : currentBoss.animClass}`}>
                                 {currentBoss.icon}
                             </div>
                             {animState.damageTextBoss && (
-                            <div className={`absolute -top-6 -left-6 font-black ${animState.damageTextBoss==='Miss!'
-                                ? 'text-slate-400 text-2xl' : animState.damageTextBoss.includes('크리티컬')
-                                ? 'text-rose-500 text-3xl sm:text-4xl drop-shadow-[0_0_15px_rgba(225,29,72,0.9)]'
-                                : 'text-yellow-400 text-2xl drop-shadow-md' } animate-bounce whitespace-nowrap`}>
-                                {animState.damageTextBoss}
-                            </div>
+                                <div className={`absolute -top-6 -left-6 font-black ${animState.damageTextBoss === 'Miss!' ? 'text-slate-400 text-2xl' : animState.damageTextBoss.includes('크리티컬') ? 'text-rose-500 text-3xl sm:text-4xl drop-shadow-[0_0_15px_rgba(225,29,72,0.9)]' : 'text-yellow-400 text-2xl drop-shadow-md'} animate-bounce whitespace-nowrap`}>
+                                    {animState.damageTextBoss}
+                                </div>
                             )}
                         </div>
                     </div>
 
                     {/* Interface Area */}
-                    <div
-                        className="flex-1 flex flex-col mt-2 z-10 bg-slate-900/95 rounded-t-3xl border-t border-slate-700 p-4 sm:p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.6)] backdrop-blur-md overflow-y-auto scrollbar-hide">
+                    <div className="flex-1 flex flex-col mt-2 z-10 bg-slate-900/95 rounded-t-3xl border-t border-slate-700 p-4 sm:p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.6)] backdrop-blur-md overflow-y-auto scrollbar-hide">
                         {gameState === 'battle' ? (
-                        <div className="flex flex-col h-full animate-in slide-in-from-bottom-4">
-                            <div className="flex justify-between items-center mb-3">
-                                <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1">
-                                    <Layers className="w-3 h-3" /> 마법 카드 덱 ({hand.length}/5)
-                                </h3>
-                                <button onClick={drawCard} disabled={hand.length>= 5 || animState.player !== 'idle'}
-                                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800
-                                    disabled:text-slate-500 rounded text-[9px] font-bold transition flex items-center
-                                    gap-1">
-                                    <RefreshCw className="w-2.5 h-2.5" /> 카드 드로우
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-2">
-                                {hand.map((spell, i) => (
-                                <button key={i} onClick={()=> handleSpellSelect(i)} className="bg-slate-800/50
-                                    hover:bg-slate-700 border border-slate-700 hover:border-indigo-400 p-2 rounded-xl
-                                    flex justify-between items-center transition group text-left
-                                    hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-                                    <div className="flex flex-col items-start gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <span
-                                                className="text-xl group-hover:scale-110 transition-transform">{spell.icon}</span>
-                                            <span className="font-bold text-xs">{spell.name}</span>
-                                        </div>
-                                        {spell.effect && (
-                                        <span
-                                            className="text-[9px] text-teal-300 bg-teal-900/40 px-1.5 py-0.5 rounded border border-teal-700/50">
-                                            ✨ {spell.effect.desc}
-                                        </span>
-                                        )}
-                                    </div>
-                                    <span
-                                        className="text-rose-400 font-black text-[9px] px-2 py-0.5 bg-rose-950/50 rounded-full border border-rose-900/50 flex-shrink-0">{spell.damage}
-                                        DMG</span>
-                                </button>
-                                ))}
-                            </div>
-                        </div>
-                        ) : selectedSpell && (
-                        <div className="flex flex-col h-full justify-between animate-in zoom-in-95 duration-200">
-                            <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg animate-float-fast">{selectedSpell.icon}</span>
-                                    <h3 className="text-xs font-bold text-indigo-300">연성식 완성하기</h3>
+                            <div className="flex flex-col h-full animate-in slide-in-from-bottom-4">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1">🎴 마법 카드 덱 ({hand.length}/5)</h3>
+                                    <button onClick={drawCard} disabled={hand.length >= 5 || animState.player !== 'idle'} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 rounded text-[9px] font-bold transition flex items-center gap-1">🔄 카드 드로우</button>
                                 </div>
-                                <button onClick={()=> setGameState('battle')} className="text-[9px] bg-slate-800 px-2
-                                    py-1 rounded hover:bg-slate-700 hover:text-white transition">취소</button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-2">
+                                    {hand.map((spell, i) => (
+                                        <button key={i} onClick={() => handleSpellSelect(i)} className="bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-indigo-400 p-2 rounded-xl flex justify-between items-center transition group text-left hover:shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xl group-hover:scale-110 transition-transform">{spell.icon}</span>
+                                                    <span className="font-bold text-xs">{spell.name}</span>
+                                                </div>
+                                                {spell.effect && (
+                                                    <span className="text-[9px] text-teal-300 bg-teal-900/40 px-1.5 py-0.5 rounded border border-teal-700/50">
+                                                        ✨ {spell.effect.desc}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="text-rose-400 font-black text-[9px] px-2 py-0.5 bg-rose-950/50 rounded-full border border-rose-900/50 flex-shrink-0">{spell.damage} DMG</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <EquationRow spell={selectedSpell} isPractice={false} />
-                            <AtomDashboard leftAtoms={calculateAtoms(selectedSpell).leftAtoms}
-                                rightAtoms={calculateAtoms(selectedSpell).rightAtoms} isPractice={false} />
-                            <button onClick={castSpell}
-                                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white rounded-xl font-bold text-base shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95 transition flex items-center justify-center gap-2 mt-auto">
-                                <Zap className="w-5 h-5 fill-current" /> 마법 발동! (공격)
-                            </button>
-                        </div>
+                        ) : selectedSpell && (
+                            <div className="flex flex-col h-full justify-between animate-in zoom-in-95 duration-200">
+                                <div className="flex justify-between items-center mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg animate-float-fast">{selectedSpell.icon}</span>
+                                        <h3 className="text-xs font-bold text-indigo-300">연성식 완성하기</h3>
+                                    </div>
+                                    <button onClick={() => setGameState('battle')} className="text-[9px] bg-slate-800 px-2 py-1 rounded hover:bg-slate-700 hover:text-white transition">취소</button>
+                                </div>
+                                <EquationRow spell={selectedSpell} isPractice={false} />
+                                <AtomDashboard leftAtoms={calculateAtoms(selectedSpell).leftAtoms} rightAtoms={calculateAtoms(selectedSpell).rightAtoms} isPractice={false} />
+                                <button onClick={castSpell} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white rounded-xl font-bold text-base shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95 transition flex items-center justify-center gap-2 mt-auto">
+                                    ⚡ 마법 발동! (공격)
+                                </button>
+                            </div>
                         )}
                     </div>
-
-                    <style dangerouslySetInnerHTML={{ __html: ` /* 다이내믹 애니메이션 Keyframes */ @keyframes float-slow { 0%,
-                        100% { transform: translateY(0); } 50% { transform: translateY(-10px); } } @keyframes float-fast
-                        { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } } @keyframes
-                        player-hover { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px)
-                        scale(1.02); } } @keyframes boss-breathe { 0%, 100% { transform: scale(1) translateY(0); } 50% {
-                        transform: scale(1.08) translateY(-5px); } } @keyframes boss-menace { 0%, 100% { transform:
-                        translateY(0) rotate(0deg) scale(1); } 25% { transform: translateY(-8px) rotate(2deg)
-                        scale(1.05); } 75% { transform: translateY(8px) rotate(-2deg) scale(1.05); } } @keyframes
-                        projectile-right { 0% { transform: translateX(-60px) scale(0.5) rotate(0deg); opacity: 0; } 20%
-                        { opacity: 1; transform: translateX(-30px) scale(1.2) rotate(45deg); } 80% { opacity: 1;
-                        transform: translateX(180px) scale(1.2) rotate(180deg); } 100% { transform: translateX(200px)
-                        scale(0.5) rotate(360deg); opacity: 0; } } @keyframes projectile-left { 0% { transform:
-                        translateX(60px) scale(0.5) rotate(0deg); opacity: 0; } 20% { opacity: 1; transform:
-                        translateX(30px) scale(1.2) rotate(-45deg); } 80% { opacity: 1; transform: translateX(-180px)
-                        scale(1.2) rotate(-180deg); } 100% { transform: translateX(-200px) scale(0.5) rotate(-360deg);
-                        opacity: 0; } } @keyframes shake { 0%, 100% { transform: translateX(0) rotate(0deg); } 25% {
-                        transform: translateX(-5px) rotate(-5deg); } 75% { transform: translateX(5px) rotate(5deg); } }
-                        .scrollbar-hide::-webkit-scrollbar { display: none; } .scrollbar-hide { -ms-overflow-style:
-                        none; scrollbar-width: none; } `}} />
                 </div>
-                );
-                }
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AlchemistGame />);
+    </script>
+</body>
+
+</html>
