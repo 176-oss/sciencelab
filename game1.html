@@ -95,26 +95,26 @@
             animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
         }
 
-        /* 네온 그림자 유틸리티 */
+        /* 네온 그림자 유틸리티 (가독성을 위해 블러 효과 축소) */
         .neon-text-cyan {
-            text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+            text-shadow: 0 0 4px var(--neon-cyan);
         }
 
         .neon-text-pink {
-            text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+            text-shadow: 0 0 4px var(--neon-pink);
         }
 
         .neon-text-green {
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+            text-shadow: 0 0 4px var(--neon-green);
         }
 
         .neon-box-cyan {
-            box-shadow: 0 0 5px var(--neon-cyan), inset 0 0 5px var(--neon-cyan);
+            box-shadow: 0 0 5px var(--neon-cyan), inset 0 0 3px var(--neon-cyan);
             border-color: var(--neon-cyan);
         }
 
         .neon-box-pink {
-            box-shadow: 0 0 5px var(--neon-pink), inset 0 0 5px var(--neon-pink);
+            box-shadow: 0 0 5px var(--neon-pink), inset 0 0 3px var(--neon-pink);
             border-color: var(--neon-pink);
         }
 
@@ -255,7 +255,7 @@
                 id: 2,
                 name: "정기시험",
                 icon: "🏫",
-                maxHp: 250,
+                maxHp: 200,
                 attack: 20,
                 proj: "📡",
                 bgClass: "from-fuchsia-950 to-black border-fuchsia-500",
@@ -266,7 +266,7 @@
                 id: 3,
                 name: "주성쌤",
                 icon: "👿",
-                maxHp: 450,
+                maxHp: 400,
                 attack: 30,
                 proj: "☢️",
                 bgClass: "from-red-950 to-black border-red-500",
@@ -298,7 +298,7 @@
         ];
 
         function AlchemistGame() {
-            const PLAYER_MAX_HP = 400;
+            const PLAYER_MAX_HP = 300;
 
             const [gameState, setGameState] = useState('intro');
             const [currentBossIndex, setCurrentBossIndex] = useState(0);
@@ -548,30 +548,29 @@
                 }
             };
 
+            // [수정된 부분] flex-nowrap으로 한 줄을 유지하고, 폰트를 tracking-tighter 와 font-sans로 바꾸어 띄어쓰기를 없앴습니다.
             const EquationRow = ({ spell, isPractice }) => {
                 return (
-                    <div className="flex flex-wrap justify-center items-center gap-y-4 gap-x-1 sm:gap-x-2 text-lg sm:text-2xl font-bold bg-black p-4 sm:p-5 rounded-none border border-cyan-500/50 mb-6 neon-box-cyan w-full overflow-x-auto whitespace-nowrap scrollbar-hide font-cyber">
+                    <div className="flex flex-nowrap justify-start sm:justify-center items-center gap-x-1 sm:gap-x-1.5 text-sm sm:text-lg md:text-xl font-bold bg-black p-3 sm:p-4 rounded-none border border-cyan-500/50 mb-6 neon-box-cyan w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
                         {spell.parts.map((part, index) => {
                             const isFirstProduct = index > 0 && part.type === 'product' && spell.parts[index - 1].type === 'reactant';
                             const isPlus = index > 0 && !isFirstProduct;
 
                             return (
-                                <div key={index} className="flex items-center">
-                                    {isFirstProduct && <span className="text-cyan-400 mx-2 sm:mx-3 shrink-0 neon-text-cyan">➔</span>}
-                                    {isPlus && <span className="text-gray-500 mx-1 sm:mx-2 shrink-0">+</span>}
+                                <div key={index} className="flex items-center shrink-0">
+                                    {isFirstProduct && <span className="text-cyan-400 mx-1 sm:mx-2 font-bold drop-shadow-md">➔</span>}
+                                    {isPlus && <span className="text-gray-500 mx-0.5 sm:mx-1">+</span>}
 
-                                    <div className={`flex items-center bg-gray-900/80 p-1 border ${isPractice ? 'border-green-500/50' : 'border-cyan-500/50'} transition-colors`}>
-                                        <div className="flex flex-col border-r border-gray-700 pr-1 mr-1">
-                                            <button onClick={() => updateCoefficient(index, 1)} disabled={isPractice && practiceStatus === 'correct'} className="text-[10px] text-gray-400 hover:text-cyan-400 disabled:opacity-0 transition-colors">▲</button>
-                                            <button onClick={() => updateCoefficient(index, -1)} disabled={isPractice && practiceStatus === 'correct'} className="text-[10px] text-gray-400 hover:text-cyan-400 disabled:opacity-0 transition-colors">▼</button>
+                                    <div className={`flex items-center bg-gray-900/90 p-0.5 sm:p-1 border ${isPractice ? 'border-green-500/50' : 'border-cyan-500/50'} transition-colors`}>
+                                        <div className="flex flex-col border-r border-gray-700 pr-0.5 mr-0.5 sm:pr-1 sm:mr-1">
+                                            <button onClick={() => updateCoefficient(index, 1)} disabled={isPractice && practiceStatus === 'correct'} className="text-[10px] sm:text-[12px] text-gray-400 hover:text-cyan-400 disabled:opacity-0 transition-colors">▲</button>
+                                            <button onClick={() => updateCoefficient(index, -1)} disabled={isPractice && practiceStatus === 'correct'} className="text-[10px] sm:text-[12px] text-gray-400 hover:text-cyan-400 disabled:opacity-0 transition-colors">▼</button>
                                         </div>
-                                        <div className="w-5 sm:w-8 text-center text-yellow-400 text-xl sm:text-3xl font-cyber">
+                                        <div className="w-4 sm:w-6 text-center text-yellow-400 text-lg sm:text-xl md:text-2xl font-cyber font-bold drop-shadow-md">
                                             {coefficients[index] === 1 ? ' ' : coefficients[index]}
                                         </div>
-                                        <div className="pr-1 sm:pr-2 text-green-400 font-cyber text-base sm:text-2xl flex items-baseline neon-text-green">
-                                            {part.formula.split('').map((char, i) => (
-                                                isNaN(char) ? char : <sub key={i} className="text-[10px] sm:text-xs opacity-80 ml-0.5">{char}</sub>
-                                            ))}
+                                        <div className="pr-1 text-green-400 font-sans tracking-tighter font-bold text-base sm:text-lg md:text-2xl flex items-center drop-shadow-md">
+                                            {part.formula}
                                         </div>
                                     </div>
                                 </div>
@@ -597,13 +596,13 @@
                                 return (
                                     <div key={el} className="flex items-center gap-2">
                                         <div className={`flex-1 flex justify-end items-center p-1.5 sm:p-2 border-y border-l transition-all ${isBalanced ? 'bg-cyan-900/20 border-cyan-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                                            <span className={`text-xs sm:text-sm font-bold ${isBalanced ? 'text-cyan-400 neon-text-cyan' : 'text-gray-500'}`}>{lc}</span>
+                                            <span className={`text-xs sm:text-sm font-bold ${isBalanced ? 'text-cyan-400 drop-shadow-md' : 'text-gray-500'}`}>{lc}</span>
                                         </div>
                                         <div className={`z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border font-black text-xs sm:text-sm shrink-0 transition-transform ${isBalanced ? 'bg-cyan-600 border-cyan-400 text-black shadow-[0_0_10px_#0ff] scale-110' : 'bg-gray-800 border-gray-600 text-gray-400'}`}>
                                             {el}
                                         </div>
                                         <div className={`flex-1 flex justify-start items-center p-1.5 sm:p-2 border-y border-r transition-all ${isBalanced ? 'bg-cyan-900/20 border-cyan-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                                            <span className={`text-xs sm:text-sm font-bold ${isBalanced ? 'text-cyan-400 neon-text-cyan' : 'text-gray-500'}`}>{rc}</span>
+                                            <span className={`text-xs sm:text-sm font-bold ${isBalanced ? 'text-cyan-400 drop-shadow-md' : 'text-gray-500'}`}>{rc}</span>
                                         </div>
                                     </div>
                                 );
@@ -617,10 +616,11 @@
                 return (
                     <div className="scanlines flex flex-col items-center justify-center min-h-[650px] bg-black/90 text-white p-6 sm:p-10 font-sans shadow-2xl border-2 border-cyan-500 overflow-hidden relative">
 
+                        {/* 화학 실험 도구 아이콘 적용 */}
                         <div className="flex items-center gap-4 mb-4 z-10">
-                            <div className="text-7xl animate-player-hover drop-shadow-[0_0_15px_rgba(0,255,255,0.6)]">🧑‍🎓</div>
-                            <div className="text-4xl text-yellow-400 animate-pulse font-cyber">&lt;/&gt;</div>
-                            <div className="text-7xl animate-boss-menace drop-shadow-[0_0_20px_rgba(255,0,0,0.8)]">👿</div>
+                            <div className="text-7xl animate-player-hover drop-shadow-[0_0_15px_rgba(0,255,255,0.6)]">⚗️</div>
+                            <div className="text-5xl text-yellow-400 animate-pulse font-cyber">⚛️</div>
+                            <div className="text-7xl animate-boss-menace drop-shadow-[0_0_20px_rgba(255,0,0,0.8)]">🧪</div>
                         </div>
 
                         <h1 className="font-cyber text-4xl sm:text-5xl font-black mb-6 text-cyan-400 text-center leading-tight z-10 animate-glitch neon-text-cyan">
@@ -643,7 +643,7 @@
                                 </li>
                                 <li className="flex gap-2 text-yellow-400">
                                     <span className="text-yellow-500">!</span>
-                                    <span>10% 확률로 오버클럭이 발생하여 2배의 파괴력을 냅니다.</span>
+                                    <span>10% 확률로 크리티컬이 발생하여 2배의 파괴력을 냅니다.</span>
                                 </li>
                             </ul>
                         </div>
@@ -703,7 +703,7 @@
                             {isWin ? "SYSTEM HACKED!" : "CONNECTION LOST"}
                         </h1>
                         <p className="text-sm sm:text-base mb-8 text-gray-400 text-center max-w-md">
-                            {isWin ? "마스터 프레임을 완전히 장악했습니다. 당신은 전설적인 화학 해커입니다!" : "방화벽에 의해 멘탈 코어가 파괴되었습니다. 화학 지식을 재정비하십시오."}
+                            {isWin ? "당신은 전설적인 화학 마스터입니다!" : "F학점!! 화학 지식을 재정비하십시오."}
                         </p>
                         <button onClick={() => setGameState('intro')} className="px-8 py-3 bg-transparent border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-bold transition shadow-[0_0_15px_rgba(0,255,255,0.5)]">
                     > RETURN TO MAIN
@@ -744,7 +744,7 @@
                     <div className="flex justify-between items-center px-6 sm:px-12 py-4 min-h-[140px] relative z-0">
                         <div className="relative">
                             <div className={`text-6xl sm:text-7xl transition-all duration-300 ${animState.player === 'attack' ? 'translate-x-12 scale-110' : animState.player === 'hurt' ? 'animate-glitch opacity-50' : 'animate-player-hover drop-shadow-[0_0_15px_rgba(0,255,255,0.4)]'}`}>
-                                🧑‍🎓
+                                🧑
                             </div>
                             {animState.damageTextPlayer && <div className={`absolute -top-6 -right-6 text-xl font-black ${animState.damageTextPlayer.includes('회복') ? 'text-cyan-400' : 'text-red-500'} animate-bounce whitespace-nowrap drop-shadow-md`}>{animState.damageTextPlayer}</div>}
                         </div>
