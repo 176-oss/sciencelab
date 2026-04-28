@@ -538,7 +538,7 @@
                         }, 1000);
                     }, 400);
                 } else {
-                    setAnimState(prev => ({ ...prev, damageTextBoss: "SYNTAX ERROR!" }));
+                    setAnimState(prev => ({ ...prev, damageTextBoss: "공격실패!" }));
                     setTimeout(() => {
                         executeBossAttack(playerHp, buffs, () => {
                             setGameState('battle');
